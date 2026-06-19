@@ -21,7 +21,7 @@ Predict → Check Stock → Draft Order → Pick Supplier → Plan Delivery → 
 - 👤 Human-in-the-loop approval for risky orders
 - 🔄 LangGraph-based orchestration with memory & checkpointing
 - 🚀 Docker & FastAPI ready
-- ✅ 29 comprehensive tests (all passing)
+- ✅ 42 comprehensive tests (all passing)
 - 🔌 Support for OpenRouter, Anthropic, OpenAI, or mock LLM
 
 ## The agent graph
@@ -49,25 +49,131 @@ An order needs a human when quantity **or** estimated cost exceeds the policy
 thresholds, or when a critical exception is flagged. Otherwise it auto-approves.
 A `MemorySaver` checkpointer lets a paused run be resumed by `thread_id`.
 
+## Setup (Local Development)
+
+### Prerequisites
+- Python 3.11+ ([download](https://www.python.org/downloads/))
+- Git
+- ~500MB disk space
+
+### Virtual Environment Setup
+
+**Create and activate a virtual environment:**
+
+**macOS/Linux:**
+```bash
+# Clone the repository
+git clone https://github.com/AshraHossain/Supply-Chain-Agents
+cd Supply-Chain-Agents
+
+# Create virtual environment
+python3 -m venv venv
+
+# Activate it
+source venv/bin/activate
+
+# Upgrade pip
+pip install --upgrade pip
+```
+
+**Windows (PowerShell):**
+```powershell
+# Clone the repository
+git clone https://github.com/AshraHossain/Supply-Chain-Agents
+cd Supply-Chain-Agents
+
+# Create virtual environment
+python -m venv venv
+
+# Activate it
+.\venv\Scripts\Activate.ps1
+
+# Upgrade pip
+python -m pip install --upgrade pip
+```
+
+**Windows (Command Prompt):**
+```cmd
+# Clone the repository
+git clone https://github.com/AshraHossain/Supply-Chain-Agents
+cd Supply-Chain-Agents
+
+# Create virtual environment
+python -m venv venv
+
+# Activate it
+venv\Scripts\activate.bat
+
+# Upgrade pip
+python -m pip install --upgrade pip
+```
+
+**Verify activation:**
+
+You should see `(venv)` at the start of your terminal prompt. Example:
+```
+(venv) $ python --version
+Python 3.11.x
+```
+
+### Install Dependencies
+
+```bash
+# Install project dependencies
+pip install -r requirements.txt
+
+# (Optional) Install development tools for testing/linting
+pip install -r requirements-dev.txt
+
+# (Optional) Install pre-commit hooks
+pip install pre-commit
+pre-commit install
+```
+
+### Deactivate Virtual Environment
+
+When you're done working:
+
+```bash
+# macOS/Linux/Windows PowerShell
+deactivate
+
+# Windows Command Prompt
+deactivate
+```
+
+To reactivate later, just run the activation command again.
+
 ## Quick start
+
+**Note:** Ensure your virtual environment is activated before running these commands. See [Virtual Environment Setup](#virtual-environment-setup) above.
 
 ### Run with no API key (mock provider)
 
 ```bash
-cp .env.example .env          # defaults are fine; or set LLM_PROVIDER=mock
+# Activate venv first (see setup above)
+source venv/bin/activate  # macOS/Linux
+# or: .\venv\Scripts\activate  # Windows
+
+cp .env.example .env
 echo "LLM_PROVIDER=mock" >> .env
 pip install -r requirements.txt
 python run_demo.py            # full end-to-end run over all SKUs
 ```
 
-### Run with an LLM (OpenRouter — default)
+### Run with an LLM (OpenRouter — recommended)
 
 ```bash
+# Activate venv first (see setup above)
+source venv/bin/activate  # macOS/Linux
+# or: .\venv\Scripts\activate  # Windows
+
 cp .env.example .env
-# in .env:
+# Edit .env with your settings:
 #   LLM_PROVIDER=openrouter
-#   OPENROUTER_API_KEY=sk-or-...
-#   LLM_MODEL=anthropic/claude-sonnet-4.5   # any OpenRouter "vendor/model" slug
+#   OPENROUTER_API_KEY=sk-or-v1-...
+#   LLM_MODEL=anthropic/claude-sonnet-4.5   # or any OpenRouter "vendor/model" slug
+
 pip install -r requirements.txt
 python run_demo.py
 ```
@@ -114,9 +220,12 @@ curl -s localhost:8000/approve -H 'content-type: application/json' \
 
 ## Tests
 
+Ensure your virtual environment is activated (see [Virtual Environment Setup](#virtual-environment-setup)).
+
 Run all tests with mock LLM (no API key needed):
 
 ```bash
+source venv/bin/activate  # macOS/Linux or .\venv\Scripts\activate on Windows
 LLM_PROVIDER=mock pytest tests/ -v
 ```
 
@@ -124,17 +233,25 @@ Run with coverage report:
 
 ```bash
 LLM_PROVIDER=mock pytest tests/ --cov=app --cov-report=html
+open htmlcov/index.html  # View coverage report (macOS)
+```
+
+Or use the Makefile shortcut:
+
+```bash
+make test              # Run tests
+make test-coverage     # Run tests with coverage
 ```
 
 **Test Coverage:**
-- ✅ 29 tests covering all agents and workflows
+- ✅ 42 tests (29 integration + 13 agent-specific)
 - ✅ Configuration & setup validation
-- ✅ Agent-specific logic (demand, inventory, procurement, supplier, delivery)
+- ✅ Agent-specific logic (demand, inventory, procurement, supplier, delivery, exception, evaluator)
 - ✅ State management & validation
-- ✅ Approval workflows
+- ✅ Approval & purchase order workflows
 - ✅ Multi-SKU isolation & thread safety
 - ✅ Edge cases & error handling
-- ✅ End-to-end integration
+- ✅ End-to-end workflow integration
 
 **CI/CD:** Tests run automatically on push/PR. See [.github/CICD_SETUP.md](.github/CICD_SETUP.md) for details.
 
@@ -210,13 +327,19 @@ app/
 
 run_demo.py            End-to-end CLI demo (all SKUs or specific)
 tests/
-  test_graph.py        29 comprehensive unit & integration tests
+  test_graph.py        29 comprehensive integration tests
+  test_agents.py       13 agent-specific unit tests
 
 docker-compose.yml     Docker orchestration (API + optional services)
 Dockerfile             Multi-stage build for production
+Makefile               Development shortcuts (test, lint, format, etc)
 requirements.txt       Python dependencies
-.env                   Runtime configuration (create from .env.example)
-.env.example           Template with defaults
+requirements-dev.txt   Development dependencies (pytest, black, isort, etc)
+.env.example           Template with defaults (copy to .env)
+.env                   Runtime configuration (⚠️  do not commit)
+pyproject.toml         Python project configuration (Black, isort, pytest, etc)
+.pre-commit-config.yaml Pre-commit hooks for code quality
+.bandit                Security scanning configuration
 ```
 
 ## Documentation
@@ -225,8 +348,81 @@ requirements.txt       Python dependencies
 - [Agent Details](docs/AGENTS.md) — How each agent works internally
 - [Configuration Guide](docs/CONFIG.md) — Environment variables & thresholds
 - [Deployment Guide](docs/DEPLOYMENT.md) — Docker, cloud platforms, scaling
-- [CI/CD Setup](docs/CICD.md) — GitHub Actions workflows & secrets
+- [CI/CD Setup](.github/CICD_SETUP.md) — GitHub Actions workflows & secrets
 - [Contributing](CONTRIBUTING.md) — Development workflow & standards
+
+## Troubleshooting
+
+### Virtual Environment Issues
+
+**Problem: `python: command not found` or `python is not recognized`**
+
+Solution: Use `python3` instead of `python`, or ensure Python is in your PATH.
+
+```bash
+# Check Python version
+python3 --version
+
+# Create venv with python3
+python3 -m venv venv
+```
+
+**Problem: `(venv)` doesn't appear in terminal prompt**
+
+Solution: The venv is not activated. Run the activation command for your OS:
+
+```bash
+# macOS/Linux
+source venv/bin/activate
+
+# Windows PowerShell
+.\venv\Scripts\Activate.ps1
+
+# Windows Command Prompt
+venv\Scripts\activate.bat
+```
+
+**Problem: `ModuleNotFoundError: No module named 'langgraph'`**
+
+Solution: Virtual environment not activated or dependencies not installed.
+
+```bash
+# Activate venv
+source venv/bin/activate  # macOS/Linux
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Verify installation
+python -c "import langgraph; print(langgraph.__version__)"
+```
+
+**Problem: `Permission denied` when running activation script (macOS/Linux)**
+
+Solution: Make the script executable.
+
+```bash
+chmod +x venv/bin/activate
+source venv/bin/activate
+```
+
+### Common Issues
+
+**API key not working:**
+- Verify `OPENROUTER_API_KEY` is set in `.env`
+- Check key hasn't expired in your OpenRouter account
+- Ensure no extra whitespace in the key
+
+**Tests failing with `LLM_PROVIDER=mock`:**
+- Check Python version is 3.11+: `python --version`
+- Reinstall dependencies: `pip install --upgrade -r requirements.txt`
+- Clear cache: `rm -rf __pycache__ .pytest_cache`
+
+**Docker issues:**
+- Ensure Docker daemon is running: `docker ps`
+- Rebuild image: `docker compose build --no-cache`
+
+For more help, see [CONTRIBUTING.md](CONTRIBUTING.md) or open an issue on GitHub.
 
 ## Performance
 
