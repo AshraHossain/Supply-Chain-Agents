@@ -1,0 +1,17 @@
+services:
+  supply-chain-agents:
+    build: .
+    image: supply-chain-agents:0.1.0
+    container_name: supply-chain-agents
+    ports:
+      - "8000:8000"
+    environment:
+      LLM_PROVIDER: ${LLM_PROVIDER:-openrouter}
+      LLM_MODEL: ${LLM_MODEL:-anthropic/claude-sonnet-4.5}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      OPENROUTER_BASE_URL: ${OPENROUTER_BASE_URL:-https://openrouter.ai/api/v1}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      APPROVAL_QTY_THRESHOLD: ${APPROVAL_QTY_THRESHOLD:-500}
+      APPROVAL_COST_THRESHOLD: ${APPROVAL_COST_THRESHOLD:-10000}
+    restart: unless-stopped
